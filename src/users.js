@@ -26,9 +26,9 @@ async function createUser(name, email) {
 // Safe version: user input is passed as a parameter, never joined into the SQL string.
 // Scenario 4 swaps this for an unsafe version to prove CodeQL blocks it.
 async function searchUsers(name) {
+  // Scenario 4: UNSAFE, user input is joined straight into the SQL string
   const { rows } = await pool.query(
-    'SELECT id, name, email FROM users WHERE name ILIKE $1 ORDER BY id',
-    [`%${name}%`],
+    "SELECT id, name, email FROM users WHERE name ILIKE '%" + name + "%' ORDER BY id",
   );
   return rows;
 }
