@@ -1,10 +1,31 @@
 const express = require('express');
+const { rateLimit } = require('express-rate-limit');
 const { pool } = require('./db');
 const users = require('./users');
 
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '10kb' }));
+
+// Limit each client to 100 requests per minute
+app.use(
+  rateLimit({
+    windowMs: 60 * 1000,
+    limit: 100,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+  }),
+);
+
+// Checks email shape without a regex, so a long crafted input can't slow the server down
+function isValidEmail(email) {
+  if (email.length > 254 || /\s/.test(email)) return false;
+  const at = email.indexOf('@');
+  if (at < 1 || at !== email.lastIndexOf('@')) return false;
+  const domain = email.slice(at + 1);
+  const dot = domain.lastIndexOf('.');
+  return dot > 0 && dot < domain.length - 1;
+}
 
 app.get('/health', async (req, res) => {
   try {
@@ -40,7 +61,7 @@ app.post('/api/users', async (req, res) => {
   if (typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'name is required' });
   }
-  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (typeof email !== 'string' || !isValidEmail(email)) {
     return res.status(400).json({ error: 'a valid email is required' });
   }
   try {
