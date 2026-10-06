@@ -28,7 +28,7 @@ jobs:
       IMAGE: ${{ inputs.image }}
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Connect to real cluster
         if: env.KUBE_CONFIG != ''
