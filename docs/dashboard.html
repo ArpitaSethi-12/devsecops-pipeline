@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DevSecOps pipeline: project proposal</title>
+<title>DevSecOps pipeline: results</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
@@ -162,6 +162,24 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
   .gate .g-what{grid-column:1 / -1;grid-row:2}
 }
 @media (prefers-reduced-motion:reduce){.dot{transition:none}}
+
+.result-tag{display:inline-block;margin-bottom:12px;font-size:13.5px;font-weight:600;color:var(--pass);background:var(--pass-soft);padding:4px 12px;border-radius:6px}
+.repo-link{color:var(--steel);font-weight:500;text-decoration:none;border-bottom:1px solid currentColor}
+.repo-link:focus-visible{outline:3px solid var(--steel);outline-offset:2px}
+.checks{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.checks li{font-size:12.5px;padding:2px 9px;border-radius:999px;font-weight:500}
+.checks .ok{background:var(--pass-soft);color:var(--pass)}
+.checks .bad{background:var(--fail-soft);color:var(--fail)}
+.checks .skip{background:var(--skip-soft);color:var(--skip)}
+.hbars{display:flex;flex-direction:column;gap:10px}
+.hbar{display:grid;grid-template-columns:120px 1fr 48px;gap:10px;align-items:center;font-size:14px}
+.hbar .track{height:12px;background:var(--bg);border-radius:6px;overflow:hidden}
+.hbar .fill{height:100%;background:var(--steel);border-radius:6px}
+.hbar .t{font-size:13px;color:var(--muted);text-align:right}
+.layers{display:flex;flex-direction:column;gap:10px}
+.layer{padding:12px 14px;border:1px solid var(--line);border-radius:10px}
+.layer .l-name{font-weight:600}
+.layer .l-what{font-size:13.5px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -169,16 +187,17 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
 
 <header>
   <div>
-    <span class="proposal-tag">Project proposal</span>
+    <span class="result-tag">Built and tested</span>
     <h1>DevSecOps pipeline for a Node.js API</h1>
-    <p>The plan: every push will go through automated tests and four security checks before it can be merged or deployed. If any check fails, the code will be blocked.</p>
+    <p>Every change goes through tests and four security checks before it can be merged or deployed. All five test scenarios were run on the live repo, and the pipeline also caught two real issues on its very first run.</p>
+    <p style="margin-top:8px"><a class="repo-link" href="https://github.com/ArpitaSethi-12/devsecops-pipeline" target="_blank" rel="noopener">github.com/ArpitaSethi-12/devsecops-pipeline</a></p>
   </div>
   <div class="stack" aria-label="Tools used">
-    <span class="chip">GitHub Actions</span><span class="chip">Docker</span><span class="chip">Gitleaks</span><span class="chip">CodeQL</span><span class="chip">Trivy</span><span class="chip">Dependabot</span><span class="chip">Kubernetes (k3s)</span>
+    <span class="chip">GitHub Actions</span><span class="chip">Docker</span><span class="chip">Gitleaks</span><span class="chip">CodeQL</span><span class="chip">Trivy</span><span class="chip">Dependabot</span><span class="chip">Kubernetes</span>
   </div>
 </header>
 
-<section class="track-panel" aria-label="Test scenario viewer">
+<section class="track-panel" aria-label="Pipeline run viewer">
   <div>
     <div class="track-head">
       <p class="run-title" id="runTitle"></p>
@@ -188,57 +207,53 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
     <div class="note" id="note" role="status" aria-live="polite"></div>
   </div>
   <div class="runs">
-    <h3>Planned test scenarios</h3>
+    <h3>Pipeline runs</h3>
     <ul class="run-list" id="runList"></ul>
   </div>
 </section>
 
-<section class="stats" id="stats" aria-label="Pipeline stats"></section>
+<section class="stats" id="stats" aria-label="Results summary"></section>
 
 <div class="grid">
   <section class="panel col-7">
-    <h2>Security gates and how each will be tested</h2>
+    <h2>What each security gate caught</h2>
     <div class="gates" id="gates"></div>
   </section>
   <section class="panel col-5">
-    <h2>Build timeline</h2>
-    <ol class="timeline" id="timeline"></ol>
+    <h2>Where the time goes</h2>
+    <p class="muted" style="font-size:14px;margin-bottom:14px">Job durations in the successful deploy run</p>
+    <div class="hbars" id="hbars"></div>
+    <p class="muted" style="font-size:13.5px;margin-top:14px">The three code checks run in parallel, so the real wait is about 5 minutes plus the approval.</p>
   </section>
 
+  <section class="panel col-4">
+    <h2>Two layers for secrets</h2>
+    <div class="layers">
+      <div class="layer"><div class="l-name">1. GitHub Push Protection</div><div class="l-what">Rejected the push before the key reached the repo</div></div>
+      <div class="layer"><div class="l-name">2. Gitleaks in the pipeline</div><div class="l-what">Still blocked the PR after the push was forced through</div></div>
+    </div>
+  </section>
   <section class="panel col-4">
     <h2>Environments</h2>
     <div class="envs">
-      <div class="env"><div><div class="e-name">Staging</div><div class="e-ver">Auto deploy after merge</div></div><span class="pill plan">Planned</span></div>
-      <div class="env"><div><div class="e-name">Production</div><div class="e-ver">Manual approval required</div></div><span class="pill plan">Planned</span></div>
+      <div class="env"><div><div class="e-name">Staging</div><div class="e-ver mono">image 471f0b3</div></div><span class="pill up">Smoke test passed</span></div>
+      <div class="env"><div><div class="e-name">Production</div><div class="e-ver mono">image 471f0b3</div></div><span class="pill up">Approved, passed</span></div>
     </div>
-    <p class="muted" style="font-size:13.5px;margin-top:12px">Production will need a manual approval after staging passes its smoke test.</p>
+    <p class="muted" style="font-size:13.5px;margin-top:12px">Deployed to a temporary Kubernetes (kind) cluster inside the runner. Production waited for manual approval.</p>
   </section>
   <section class="panel col-4">
-    <h2>How a change will ship</h2>
+    <h2>How a change ships</h2>
     <ol class="flow-steps">
       <li>Developer opens a pull request</li>
-      <li>CI runs tests, secret scan and code scan</li>
+      <li>Tests, Gitleaks and CodeQL run in parallel</li>
       <li>Image is built and scanned by Trivy</li>
       <li>Merge is allowed only if all checks pass</li>
-      <li>Clean image is pushed and deployed</li>
+      <li>Image is pushed, deployed to staging, then production after approval</li>
     </ol>
-  </section>
-  <section class="panel col-4">
-    <h2>Repo structure</h2>
-<pre class="files">.github/
-  workflows/
-    ci.yml   PR checks
-    cd.yml   deploy on main
-  dependabot.yml
-k8s/
-  deployment.yaml
-  service.yaml
-src/  tests/
-Dockerfile</pre>
   </section>
 </div>
 
-<footer>This is a proposal. The scenarios show how the pipeline is designed to behave. Real results will replace them once it is built.</footer>
+<footer>All results are from real pipeline runs on 6 October 2026.</footer>
 </div>
 
 <script>
@@ -248,72 +263,89 @@ const STAGES=[
   {name:"Build image",sub:"Multi-stage Dockerfile"},
   {name:"Image scan",sub:"Trivy",gate:true},
   {name:"Push image",sub:"GitHub registry"},
-  {name:"Deploy",sub:"k3s cluster"}
+  {name:"Deploy",sub:"Staging, production"}
 ];
-// p = pass, f = fail, s = skipped
+// p = pass, f = fail, s = skipped. Ordered oldest first.
 const RUNS=[
-  {id:1,trigger:"Pull request",msg:"Clean pull request",r:"ppppss",
-   test:"Open a PR with a small, safe change.",
-   expect:"All checks pass and the PR can be merged. Push and deploy are skipped because the code is not merged yet."},
-  {id:2,trigger:"Merge to main",msg:"Merge and deploy",r:"pppppp",
-   test:"Merge the clean PR into main.",
-   expect:"The full pipeline runs. The image is pushed to the registry and deployed to the k3s cluster, then a smoke test checks the health endpoint."},
-  {id:3,trigger:"Pull request",msg:"Leaked secret",r:"pfssss",
-   test:"Commit a fake AWS access key inside config.js.",
-   expect:"Gitleaks will detect the key and stop the pipeline. The PR cannot be merged until the key is removed and moved to GitHub Secrets."},
-  {id:4,trigger:"Pull request",msg:"SQL injection",r:"pfssss",
-   test:"Add a search endpoint that builds the SQL query by joining user input into a string.",
-   expect:"CodeQL will flag it as a SQL injection risk and block the PR. The fix is a parameterised query."},
-  {id:5,trigger:"Pull request",msg:"Vulnerable base image",r:"pppfss",
-   test:"Use an old Docker base image that has known vulnerabilities.",
-   expect:"Code checks and the build pass, but Trivy will find critical vulnerabilities and stop the pipeline before the image is pushed. The fix is a newer, smaller base image."}
+  {id:"cd1",label:"CD #1",trigger:"Push to main",msg:"Initial commit",r:"pfssss",
+   checks:[["Lint and test","ok"],["Gitleaks","ok"],["CodeQL","bad"],["Build and scan","skip"]],
+   head:"Blocked by CodeQL on the very first run",
+   body:"CodeQL found 2 real problems in the code: a slow regex in the email check that a crafted input could use to freeze the server (js/polynomial-redos, src/app.js:43), and no rate limiting on routes that hit the database (js/missing-rate-limiting, src/app.js:9).",
+   fix:"Fixed in PR #10 by replacing the regex with a simple check and adding a limit of 100 requests per minute."},
+  {id:"pr10",label:"PR #10",trigger:"Pull request",msg:"Fix CodeQL findings",r:"ppppss",scenario:1,
+   checks:[["Lint and test","ok"],["Gitleaks","ok"],["CodeQL","ok"],["Build and scan","ok"]],
+   head:"Scenario 1: clean pull request",
+   body:"All checks passed in about 2 minutes, so the merge button was enabled. Push and deploy are skipped on pull requests and only run after merging."},
+  {id:"cd2",label:"CD #2",trigger:"Merge to main",msg:"Deploy commit 471f0b3",r:"pppppp",scenario:2,
+   checks:[["Lint and test","ok"],["Gitleaks","ok"],["CodeQL","ok"],["Build and scan","ok"],["Staging","ok"],["Production","ok"]],
+   head:"Scenario 2: merged and deployed",
+   body:"The image was pushed to GitHub Container Registry, deployed to staging and smoke tested. Production waited for manual approval, then deployed and passed its smoke test too. Gitleaks reported no leaks."},
+  {id:"push3",label:"Push",trigger:"git push",msg:"Add S3 config (fake AWS key)",r:"fsssss",scenario:3,
+   checks:[["GitHub Push Protection","bad"]],
+   head:"Scenario 3, layer 1: push rejected by GitHub",
+   body:"GitHub Push Protection recognised an AWS Access Key ID (src/config.js:5) and an AWS Secret Access Key (src/config.js:6) and refused the push. The code never reached the repo.",
+   fix:"To test layer 2, the fake key was marked as used in tests and the push was allowed."},
+  {id:"pr11",label:"PR #11",trigger:"Pull request",msg:"Add S3 config (fake AWS key)",r:"pfssss",scenario:3,
+   checks:[["Lint and test","ok"],["Gitleaks","bad"],["CodeQL","ok"],["Build and scan","skip"]],
+   head:"Scenario 3, layer 2: blocked by Gitleaks",
+   body:"Even after the push was forced through, Gitleaks found the key in 9 seconds and the PR could not be merged. Everything else passed, so the secret was the only reason.",
+   fix:"PR closed and branch deleted. Once a secret is pushed it should be treated as leaked and revoked."},
+  {id:"pr12",label:"PR #12",trigger:"Pull request",msg:"Simplify search query (SQL injection)",r:"pfssss",scenario:4,
+   checks:[["Lint and test","bad"],["Gitleaks","ok"],["CodeQL","bad"],["Build and scan","skip"]],
+   head:"Scenario 4: blocked by CodeQL and tests",
+   body:"The search query was changed to join user input straight into the SQL string. CodeQL flagged it as js/sql-injection at src/users.js:31. A test that sends ' OR '1'='1 also failed, because the query returned every user.",
+   fix:"PR closed. The safe version uses a parameterised query ($1)."},
+  {id:"pr13",label:"PR #13",trigger:"Pull request",msg:"Switch runtime to node 16 image",r:"pppfss",scenario:5,
+   checks:[["Lint and test","ok"],["Gitleaks","ok"],["CodeQL","ok"],["Build and scan","bad"]],
+   head:"Scenario 5: blocked by Trivy",
+   body:"All code checks passed, but Trivy found 2,152 fixable vulnerabilities in the old node:16-bullseye image: 214 critical and 1,938 high. Examples include a heap overflow in curl (CVE-2023-38545) and remote code execution in git (CVE-2024-32002).",
+   fix:"PR closed and the image was never pushed. The project uses a patched node:22-alpine image with npm removed."}
 ];
 const GATES=[
-  {name:"Tests and lint",what:"Catches broken code and style issues",count:"Every scenario",cls:"info"},
-  {name:"Gitleaks",what:"Stops secrets like API keys from being committed",count:"Scenario 3",cls:"caught"},
-  {name:"CodeQL",what:"Finds risky code such as SQL injection",count:"Scenario 4",cls:"caught"},
-  {name:"Trivy",what:"Scans the Docker image for known vulnerabilities",count:"Scenario 5",cls:"caught"},
-  {name:"Dependabot",what:"Opens PRs when dependencies need updates",count:"Runs weekly",cls:"info"}
+  {name:"CodeQL",what:"Slow regex and missing rate limiting (real), SQL injection (scenario 4)",count:"3 caught",cls:"caught"},
+  {name:"Trivy",what:"Vulnerable packages in an old Docker base image (scenario 5)",count:"2,152 found",cls:"caught"},
+  {name:"Push Protection",what:"Fake AWS key rejected at push time (scenario 3)",count:"2 secrets",cls:"caught"},
+  {name:"Gitleaks",what:"Same key caught in the PR after the push was forced (scenario 3)",count:"2 secrets",cls:"caught"},
+  {name:"Tests",what:"SQL injection test failed on the unsafe query (scenario 4)",count:"1 caught",cls:"caught"},
+  {name:"Dependabot",what:"Outdated packages and actions found within minutes of the first push",count:"9 PRs opened",cls:"info"}
 ];
-const TIMELINE=[
-  ["Week 1","Build the Node.js API with tests, set up the repo and the basic CI workflow"],
-  ["Week 2","Add Gitleaks, CodeQL and Dependabot, and turn on branch protection"],
-  ["Week 3","Write the Dockerfile, add Trivy, push images to GitHub registry"],
-  ["Week 4","Deploy to k3s, add the smoke test, run all 5 scenarios and record results"]
-];
+const DURATIONS=[["CodeQL",77],["Staging deploy",73],["Production deploy",73],["Build and scan",52],["Lint and test",22],["Gitleaks",6]];
 
 const status=r=>r.r.includes("f")?"fail":"pass";
 const track=document.getElementById("track"), note=document.getElementById("note");
 
 function showRun(run){
-  document.getElementById("runTitle").innerHTML=`<strong>Scenario ${run.id}:</strong> ${run.msg}, triggered by ${run.trigger.toLowerCase()}`;
+  document.getElementById("runTitle").innerHTML=`<strong>${run.label}</strong>, ${run.trigger.toLowerCase()}: ${run.msg}`;
   const v=document.getElementById("verdict"), st=status(run);
-  v.className="verdict "+st; v.textContent=st==="pass"?"Expected: passes":"Expected: blocked";
+  v.className="verdict "+st; v.textContent=st==="pass"?"Passed":"Blocked";
   track.innerHTML=STAGES.map((s,i)=>{
     const c=run.r[i], cls=c==="p"?"s-pass":c==="f"?"s-fail":"s-skip";
     const icon=c==="p"?"✓":c==="f"?"✕":"–";
-    return `<div class="stage ${cls}"><div class="dot" aria-hidden="true">${icon}</div><div><div class="stage-name">${s.name}</div><div class="stage-sub">${s.sub}</div>${s.gate?'<span class="gate-tag">Security gate</span>':""}<span style="position:absolute;left:-9999px">${c==="p"?"passes":c==="f"?"fails":"skipped"}</span></div></div>`;
+    return `<div class="stage ${cls}"><div class="dot" aria-hidden="true">${icon}</div><div><div class="stage-name">${s.name}</div><div class="stage-sub">${s.sub}</div>${s.gate?'<span class="gate-tag">Security gate</span>':""}<span style="position:absolute;left:-9999px">${c==="p"?"passed":c==="f"?"failed":"skipped"}</span></div></div>`;
   }).join("");
   note.className="note"+(st==="fail"?" fail":"");
-  note.innerHTML=`<strong>How I will test it</strong>${run.test}<br><strong style="margin-top:8px">What should happen</strong>${run.expect}`;
-  document.querySelectorAll(".run-btn").forEach(b=>b.setAttribute("aria-pressed",b.dataset.id==run.id));
+  const chk=run.checks.map(([n,c])=>`<li class="${c}">${n}${c==="ok"?" passed":c==="bad"?" failed":" skipped"}</li>`).join("");
+  note.innerHTML=`<strong>${run.head}</strong>${run.body}${run.fix?`<br><span class="muted">${run.fix}</span>`:""}<ul class="checks">${chk}</ul>`;
+  document.querySelectorAll(".run-btn").forEach(b=>b.setAttribute("aria-pressed",b.dataset.id===run.id));
 }
 
-document.getElementById("runList").innerHTML=RUNS.map(r=>`<li><button class="run-btn" data-id="${r.id}" aria-pressed="false"><span class="ind ${status(r)}" aria-hidden="true"></span><span style="min-width:0"><span class="msg" style="display:block">${r.msg}</span><span class="meta">${r.trigger}</span></span><span class="num">${r.id}</span></button></li>`).join("");
+document.getElementById("runList").innerHTML=RUNS.map(r=>`<li><button class="run-btn" data-id="${r.id}" aria-pressed="false"><span class="ind ${status(r)}" aria-hidden="true"></span><span style="min-width:0"><span class="msg" style="display:block">${r.msg}</span><span class="meta">${r.label}${r.scenario?", scenario "+r.scenario:", real finding"}</span></span><span class="num"></span></button></li>`).join("");
 document.getElementById("runList").addEventListener("click",e=>{
   const b=e.target.closest(".run-btn"); if(!b) return;
-  showRun(RUNS.find(r=>r.id==b.dataset.id));
+  showRun(RUNS.find(r=>r.id===b.dataset.id));
 });
 
 document.getElementById("stats").innerHTML=[
-  ["5","Pipeline stages"],["4","Security tools"],["2","Environments"],["5","Test scenarios"]
+  ["5 of 5","Test scenarios passed"],["2","Real issues caught on first run"],["2,152","Image vulnerabilities blocked"],["~5 min","Push to production, excluding approval"]
 ].map(([v,l])=>`<div class="stat"><div class="val">${v}</div><div class="lbl">${l}</div></div>`).join("");
 
 document.getElementById("gates").innerHTML=GATES.map(g=>`<div class="gate"><div class="g-name">${g.name}</div><div class="g-what">${g.what}</div><div class="g-count ${g.cls}">${g.count}</div></div>`).join("");
 
-document.getElementById("timeline").innerHTML=TIMELINE.map(([w,t])=>`<li><span class="wk">${w}</span><span class="task">${t}</span></li>`).join("");
+const maxD=Math.max(...DURATIONS.map(d=>d[1]));
+const fmt=s=>s>=60?`${Math.floor(s/60)}m ${s%60}s`:`${s}s`;
+document.getElementById("hbars").innerHTML=DURATIONS.map(([n,s])=>`<div class="hbar"><span>${n}</span><span class="track"><span class="fill" style="display:block;width:${(s/maxD*100).toFixed(0)}%"></span></span><span class="t">${fmt(s)}</span></div>`).join("");
 
-showRun(RUNS[2]);
+showRun(RUNS[0]);
 </script>
 </body>
 </html>
