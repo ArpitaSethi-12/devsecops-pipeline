@@ -189,7 +189,7 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
   <div>
     <span class="result-tag">Built and tested</span>
     <h1>DevSecOps pipeline for a Node.js API</h1>
-    <p>Every change goes through tests and four security checks before it can be merged or deployed. All five test scenarios were run on the live repo, and the pipeline also caught two real issues on its very first run.</p>
+    <p>Every change goes through tests and four security checks before it can be merged or deployed. All five test scenarios were run on the live repo, and the pipeline also caught three real issues that nobody planned: two security problems on its very first run, and a deployment bug that staging stopped before production.</p>
     <p style="margin-top:8px"><a class="repo-link" href="https://github.com/ArpitaSethi-12/devsecops-pipeline" target="_blank" rel="noopener">github.com/ArpitaSethi-12/devsecops-pipeline</a></p>
   </div>
   <div class="stack" aria-label="Tools used">
@@ -221,9 +221,9 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
   </section>
   <section class="panel col-5">
     <h2>Where the time goes</h2>
-    <p class="muted" style="font-size:14px;margin-bottom:14px">Job durations in the successful deploy run</p>
+    <p class="muted" style="font-size:14px;margin-bottom:14px">Job durations in the latest deploy run</p>
     <div class="hbars" id="hbars"></div>
-    <p class="muted" style="font-size:13.5px;margin-top:14px">The three code checks run in parallel, so the real wait is about 5 minutes plus the approval.</p>
+    <p class="muted" style="font-size:13.5px;margin-top:14px">The three code checks run in parallel, so the whole run took 5 minutes 34 seconds.</p>
   </section>
 
   <section class="panel col-4">
@@ -236,8 +236,8 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
   <section class="panel col-4">
     <h2>Environments</h2>
     <div class="envs">
-      <div class="env"><div><div class="e-name">Staging</div><div class="e-ver mono">image 471f0b3</div></div><span class="pill up">Smoke test passed</span></div>
-      <div class="env"><div><div class="e-name">Production</div><div class="e-ver mono">image 471f0b3</div></div><span class="pill up">Approved, passed</span></div>
+      <div class="env"><div><div class="e-name">Staging</div><div class="e-ver mono">image 041eaed</div></div><span class="pill up">Smoke test passed</span></div>
+      <div class="env"><div><div class="e-name">Production</div><div class="e-ver mono">image 041eaed</div></div><span class="pill up">Approved, passed</span></div>
     </div>
     <p class="muted" style="font-size:13.5px;margin-top:12px">Deployed to a temporary Kubernetes (kind) cluster inside the runner. Production waited for manual approval.</p>
   </section>
@@ -299,17 +299,27 @@ const RUNS=[
    checks:[["Lint and test","ok"],["Gitleaks","ok"],["CodeQL","ok"],["Build and scan","bad"]],
    head:"Scenario 5: blocked by Trivy",
    body:"All code checks passed, but Trivy found 2,152 fixable vulnerabilities in the old node:16-bullseye image: 214 critical and 1,938 high. Examples include a heap overflow in curl (CVE-2023-38545) and remote code execution in git (CVE-2024-32002).",
-   fix:"PR closed and the image was never pushed. The project uses a patched node:22-alpine image with npm removed."}
+   fix:"PR closed and the image was never pushed. The project uses a patched node:22-alpine image with npm removed."},
+  {id:"cd3",label:"CD #3",trigger:"Merge to main",msg:"Deploy commit 1423514",r:"pppppf",kind:"real finding",
+   checks:[["Lint and test","ok"],["Gitleaks","ok"],["CodeQL","ok"],["Build and scan","ok"],["Staging","bad"],["Production","skip"]],
+   head:"Staging caught a deployment bug",
+   body:"Kubernetes rejected the deployment because this commit ID (1423514) has only digits, so the version was read as a number instead of text. Earlier IDs like 471f0b3 had letters, which is why it never showed up before. It only happens on roughly 1 in 25 commits.",
+   fix:"Production was never touched. Fixed in PR #15 by putting the version in quotes."},
+  {id:"cd4",label:"CD #4",trigger:"Merge to main",msg:"Deploy commit 041eaed",r:"pppppp",kind:"latest deploy",
+   checks:[["Lint and test","ok"],["Gitleaks","ok"],["CodeQL","ok"],["Build and scan","ok"],["Staging","ok"],["Production","ok"]],
+   head:"Fix verified and deployed",
+   body:"With the version quoted, staging and production both deployed and passed their smoke tests. The whole run took 5 minutes 34 seconds, including the manual approval."}
 ];
 const GATES=[
   {name:"CodeQL",what:"Slow regex and missing rate limiting (real), SQL injection (scenario 4)",count:"3 caught",cls:"caught"},
   {name:"Trivy",what:"Vulnerable packages in an old Docker base image (scenario 5)",count:"2,152 found",cls:"caught"},
   {name:"Push Protection",what:"Fake AWS key rejected at push time (scenario 3)",count:"2 secrets",cls:"caught"},
   {name:"Gitleaks",what:"Same key caught in the PR after the push was forced (scenario 3)",count:"2 secrets",cls:"caught"},
+  {name:"Staging",what:"Deployment bug stopped before production (real)",count:"1 caught",cls:"caught"},
   {name:"Tests",what:"SQL injection test failed on the unsafe query (scenario 4)",count:"1 caught",cls:"caught"},
   {name:"Dependabot",what:"Outdated packages and actions found within minutes of the first push",count:"9 PRs opened",cls:"info"}
 ];
-const DURATIONS=[["CodeQL",77],["Staging deploy",73],["Production deploy",73],["Build and scan",52],["Lint and test",22],["Gitleaks",6]];
+const DURATIONS=[["Staging deploy",101],["Production deploy",89],["CodeQL",77],["Build and scan",45],["Lint and test",19],["Gitleaks",9]];
 
 const status=r=>r.r.includes("f")?"fail":"pass";
 const track=document.getElementById("track"), note=document.getElementById("note");
@@ -329,14 +339,14 @@ function showRun(run){
   document.querySelectorAll(".run-btn").forEach(b=>b.setAttribute("aria-pressed",b.dataset.id===run.id));
 }
 
-document.getElementById("runList").innerHTML=RUNS.map(r=>`<li><button class="run-btn" data-id="${r.id}" aria-pressed="false"><span class="ind ${status(r)}" aria-hidden="true"></span><span style="min-width:0"><span class="msg" style="display:block">${r.msg}</span><span class="meta">${r.label}${r.scenario?", scenario "+r.scenario:", real finding"}</span></span><span class="num"></span></button></li>`).join("");
+document.getElementById("runList").innerHTML=RUNS.map(r=>`<li><button class="run-btn" data-id="${r.id}" aria-pressed="false"><span class="ind ${status(r)}" aria-hidden="true"></span><span style="min-width:0"><span class="msg" style="display:block">${r.msg}</span><span class="meta">${r.label}${r.scenario?", scenario "+r.scenario:", "+(r.kind||"real finding")}</span></span><span class="num"></span></button></li>`).join("");
 document.getElementById("runList").addEventListener("click",e=>{
   const b=e.target.closest(".run-btn"); if(!b) return;
   showRun(RUNS.find(r=>r.id===b.dataset.id));
 });
 
 document.getElementById("stats").innerHTML=[
-  ["5 of 5","Test scenarios passed"],["2","Real issues caught on first run"],["2,152","Image vulnerabilities blocked"],["~5 min","Push to production, excluding approval"]
+  ["5 of 5","Test scenarios passed"],["3","Real issues caught, none planned"],["2,152","Image vulnerabilities blocked"],["5m 34s","Latest merge to production"]
 ].map(([v,l])=>`<div class="stat"><div class="val">${v}</div><div class="lbl">${l}</div></div>`).join("");
 
 document.getElementById("gates").innerHTML=GATES.map(g=>`<div class="gate"><div class="g-name">${g.name}</div><div class="g-what">${g.what}</div><div class="g-count ${g.cls}">${g.count}</div></div>`).join("");
