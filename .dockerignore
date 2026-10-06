@@ -1,0 +1,10 @@
+node_modules
+.git
+.github
+tests
+docs
+scenarios
+scripts
+k8s
+*.md
+.env*

@@ -1,0 +1,36 @@
+const { pool } = require('./db');
+
+async function listUsers() {
+  const { rows } = await pool.query(
+    'SELECT id, name, email FROM users ORDER BY id',
+  );
+  return rows;
+}
+
+async function getUser(id) {
+  const { rows } = await pool.query(
+    'SELECT id, name, email FROM users WHERE id = $1',
+    [id],
+  );
+  return rows[0] || null;
+}
+
+async function createUser(name, email) {
+  const { rows } = await pool.query(
+    'INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id, name, email',
+    [name, email],
+  );
+  return rows[0];
+}
+
+// Safe version: user input is passed as a parameter, never joined into the SQL string.
+// Scenario 4 swaps this for an unsafe version to prove CodeQL blocks it.
+async function searchUsers(name) {
+  const { rows } = await pool.query(
+    'SELECT id, name, email FROM users WHERE name ILIKE $1 ORDER BY id',
+    [`%${name}%`],
+  );
+  return rows;
+}
+
+module.exports = { listUsers, getUser, createUser, searchUsers };

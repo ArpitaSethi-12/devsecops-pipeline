@@ -1,0 +1,45 @@
+name: CD
+
+# Runs after code is merged into main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only one deployment at a time
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  packages: write
+  pull-requests: read
+  security-events: write
+
+jobs:
+  ci:
+    name: Checks, build and push
+    uses: ./.github/workflows/ci.yml
+    with:
+      push-image: true
+    secrets: inherit
+
+  staging:
+    name: Staging
+    needs: ci
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+      image: ${{ needs.ci.outputs.image }}
+    secrets: inherit
+
+  production:
+    name: Production
+    needs: [ci, staging]
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      image: ${{ needs.ci.outputs.image }}
+    secrets: inherit

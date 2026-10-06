@@ -1,0 +1,64 @@
+name: Deploy
+
+# Reusable deploy job, called by cd.yml for staging and then production.
+#
+# If the environment has a KUBE_CONFIG secret (base64 kubeconfig), it deploys to that real cluster.
+# If not, it creates a temporary kind cluster inside the runner, so the deploy and smoke test
+# still run end to end at zero cost.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      image:
+        type: string
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      packages: read
+    env:
+      NAMESPACE: ${{ inputs.environment }}
+      IMAGE: ${{ inputs.image }}
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to real cluster
+        if: env.KUBE_CONFIG != ''
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl cluster-info
+
+      - name: Create temporary kind cluster
+        if: env.KUBE_CONFIG == ''
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: demo
+
+      - name: Load image into kind
+        if: env.KUBE_CONFIG == ''
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$IMAGE"
+          kind load docker-image "$IMAGE" --name demo
+
+      - name: Deploy
+        run: ./scripts/deploy.sh
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      - name: Smoke test
+        run: ./scripts/smoke-test.sh
+
+      - name: Roll back if smoke test failed
+        if: failure() && env.KUBE_CONFIG != ''
+        run: kubectl -n "$NAMESPACE" rollout undo deployment/api

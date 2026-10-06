@@ -1,0 +1,24 @@
+{
+  "name": "devsecops-pipeline",
+  "version": "1.0.0",
+  "description": "Node.js API with a DevSecOps CI/CD pipeline on GitHub Actions",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "lint": "eslint ."
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "pg": "^8.16.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "eslint": "^9.30.0",
+    "globals": "^16.3.0"
+  }
+}
