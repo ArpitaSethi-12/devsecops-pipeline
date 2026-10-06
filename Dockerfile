@@ -5,9 +5,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 # Stage 2: small runtime image
-FROM node:22-alpine AS runtime
-# Patch OS packages to the latest fixes
-RUN apk upgrade --no-cache
+FROM node:16-bullseye AS runtime
 # Remove npm, yarn and corepack: not needed at runtime and a common source of CVEs
 RUN rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx \
     /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg /opt/yarn*
