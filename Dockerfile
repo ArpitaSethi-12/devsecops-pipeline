@@ -1,11 +1,11 @@
 # Stage 1: install production dependencies only
-FROM node:22-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 # Stage 2: small runtime image
-FROM node:22-alpine AS runtime
+FROM node:26-alpine AS runtime
 # Patch OS packages to the latest fixes
 RUN apk upgrade --no-cache
 # Remove npm, yarn and corepack: not needed at runtime and a common source of CVEs
