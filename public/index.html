@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Users app</title>
+<style>
+:root{
+  --bg:#E9EDF1; --panel:#FFFFFF; --ink:#18212C; --muted:#5A6675; --line:#D3DAE2;
+  --steel:#2F5D8A; --steel-soft:#DCE7F2; --pass:#237A55; --pass-soft:#DDF0E6; --fail:#B83232; --fail-soft:#F7E0E0;
+  --font:"Segoe UI",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#10161D; --panel:#18212B; --ink:#E6ECF2; --muted:#98A5B3; --line:#2A3542;
+  --steel:#7FAEDB; --steel-soft:#1E3247; --pass:#5CC495; --pass-soft:#163527; --fail:#EE7A7A; --fail-soft:#3D1D1F;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5}
+.wrap{max-width:860px;margin:0 auto;padding:32px 20px 48px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}
+h1{margin:0;font-size:28px;letter-spacing:-0.01em}
+h2{margin:0 0 14px;font-size:18px}
+.health{font-size:14px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--steel-soft);color:var(--steel)}
+.health.ok{background:var(--pass-soft);color:var(--pass)}
+.health.bad{background:var(--fail-soft);color:var(--fail)}
+.grid{display:grid;grid-template-columns:1fr 1.4fr;gap:20px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+label{display:block;font-size:14px;font-weight:600;margin:0 0 6px}
+input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);margin-bottom:14px}
+input:focus-visible,button:focus-visible{outline:3px solid var(--steel);outline-offset:2px}
+button{font:inherit;font-weight:600;padding:10px 16px;border:0;border-radius:8px;background:var(--steel);color:#fff;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+.msg{font-size:14px;margin-top:12px;min-height:21px}
+.msg.ok{color:var(--pass)} .msg.bad{color:var(--fail)}
+.search{display:flex;gap:8px;margin-bottom:14px}
+.search input{margin:0}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+li:first-child{border-top:0}
+.name{font-weight:600}
+.email,.id{font-size:14px;color:var(--muted)}
+.empty{color:var(--muted);font-size:15px;padding:8px 0}
+footer{margin-top:24px;font-size:13px;color:var(--muted);text-align:center}
+@media (max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Users app</h1>
+    <span class="health" id="health" role="status">Checking...</span>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="add-title">
+      <h2 id="add-title">Add a user</h2>
+      <form id="addForm" novalidate>
+        <label for="name">Name</label>
+        <input id="name" name="name" autocomplete="name" required>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+        <button type="submit">Add user</button>
+        <p class="msg" id="addMsg" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="list-title">
+      <h2 id="list-title">Users</h2>
+      <form class="search" id="searchForm" role="search">
+        <input id="q" aria-label="Search by name" placeholder="Search by name">
+        <button type="submit">Search</button>
+      </form>
+      <ul id="list" aria-live="polite"></ul>
+    </section>
+  </div>
+
+  <footer>Every change to this page went through tests, Gitleaks, CodeQL and Trivy before it was deployed.</footer>
+</div>
+
+<script>
+const list = document.getElementById('list');
+const addMsg = document.getElementById('addMsg');
+
+// Builds rows with textContent so user input is never treated as HTML
+function render(users) {
+  list.replaceChildren();
+  if (!users.length) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'No users found.';
+    list.append(li);
+    return;
+  }
+  for (const u of users) {
+    const li = document.createElement('li');
+    const left = document.createElement('div');
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = u.name;
+    const email = document.createElement('div');
+    email.className = 'email';
+    email.textContent = u.email;
+    left.append(name, email);
+    const id = document.createElement('span');
+    id.className = 'id';
+    id.textContent = '#' + u.id;
+    li.append(left, id);
+    list.append(li);
+  }
+}
+
+async function load(q) {
+  const url = q ? '/api/users/search?name=' + encodeURIComponent(q) : '/api/users';
+  const res = await fetch(url);
+  render(res.ok ? await res.json() : []);
+}
+
+async function checkHealth() {
+  const el = document.getElementById('health');
+  try {
+    const res = await fetch('/health');
+    const body = await res.json();
+    el.className = 'health ' + (res.ok ? 'ok' : 'bad');
+    el.textContent = res.ok ? 'Healthy, version ' + String(body.version).slice(0, 7) : 'Database unavailable';
+  } catch {
+    el.className = 'health bad';
+    el.textContent = 'API not reachable';
+  }
+}
+
+document.getElementById('addForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('name').value;
+  const email = document.getElementById('email').value;
+  const res = await fetch('/api/users', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name, email }),
+  });
+  const body = await res.json();
+  addMsg.className = 'msg ' + (res.ok ? 'ok' : 'bad');
+  addMsg.textContent = res.ok ? 'Added ' + body.name : body.error;
+  if (res.ok) { e.target.reset(); load(); }
+});
+
+document.getElementById('searchForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  load(document.getElementById('q').value.trim());
+});
+
+checkHealth();
+load();
+</script>
+</body>
+</html>
