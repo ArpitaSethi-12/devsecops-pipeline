@@ -66,6 +66,12 @@ test('search treats SQL as plain text', async () => {
   assert.equal((await res.json()).length, 0);
 });
 
+test('serves the web page', async () => {
+  const res = await fetch(`${base}/`);
+  assert.equal(res.status, 200);
+  assert.match(await res.text(), /<title>Users app<\/title>/);
+});
+
 test('unknown user returns 404', async () => {
   assert.equal((await fetch(`${base}/api/users/9999`)).status, 404);
 });

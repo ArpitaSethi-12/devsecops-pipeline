@@ -17,6 +17,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src
+COPY public ./public
 
 ARG APP_VERSION=dev
 ENV APP_VERSION=$APP_VERSION

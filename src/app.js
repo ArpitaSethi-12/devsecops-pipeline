@@ -1,3 +1,4 @@
+const path = require('node:path');
 const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const { pool } = require('./db');
@@ -16,6 +17,9 @@ app.use(
     legacyHeaders: false,
   }),
 );
+
+// Serve the web page from /public
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Checks email shape without a regex, so a long crafted input can't slow the server down
 function isValidEmail(email) {
