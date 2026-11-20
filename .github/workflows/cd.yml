@@ -43,3 +43,26 @@ jobs:
       environment: production
       image: ${{ needs.ci.outputs.image }}
     secrets: inherit
+
+  # Optional: updates the live EC2 server after production passes.
+  # Skipped until the EC2_HOST and EC2_SSH_KEY repository secrets are added.
+  ec2:
+    name: EC2
+    needs: production
+    runs-on: ubuntu-latest
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+    steps:
+      - name: Skip if EC2 is not set up
+        if: env.EC2_HOST == ''
+        run: echo "EC2_HOST secret is not set, skipping the EC2 deploy"
+
+      - name: Deploy to EC2
+        if: env.EC2_HOST != ''
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_SSH_KEY" > ~/.ssh/ec2.pem
+          chmod 600 ~/.ssh/ec2.pem
+          ssh -i ~/.ssh/ec2.pem -o StrictHostKeyChecking=accept-new "ubuntu@$EC2_HOST" \
+            "cd /opt/app && sudo git pull --ff-only && sudo bash scripts/ec2-update.sh"
