@@ -1,5 +1,14 @@
 # DevSecOps pipeline for a Node.js API
 
+## Live links
+
+| What | Link |
+|---|---|
+| Live app on AWS EC2 | http://EC2_PUBLIC_IP |
+| Health check | http://EC2_PUBLIC_IP/health |
+| Project dashboard | https://arpitasethi-12.github.io/devsecops-pipeline |
+| Source code | https://github.com/ArpitaSethi-12/devsecops-pipeline |
+
 A small users API with a CI/CD pipeline on GitHub Actions. Every change goes through tests and four security checks before it can be merged or deployed. If any check fails, the code is blocked.
 
 ## How the pipeline works
@@ -34,10 +43,13 @@ scripts/
   deploy.sh         deploys to a namespace
   smoke-test.sh     checks the deployed app is healthy
   run-scenario.sh   sets up the test scenarios
+  ec2-user-data.sh  EC2 startup script
+  ec2-update.sh     rebuilds the app on EC2 after a merge
 scenarios/          step by step guide for the 5 test scenarios
 docs/dashboard.html project dashboard for presentations
 Dockerfile          multi-stage, non-root, no npm in the final image
 docker-compose.yml  run everything locally
+docker-compose.prod.yml  production setup used on EC2
 ```
 
 ## API
@@ -119,6 +131,19 @@ To deploy to a real cluster instead (for example k3s on a cloud VM), add these s
 | `DB_PASSWORD` | Optional. A password for Postgres. If missing, one is generated on first deploy. |
 
 For a real cluster, also make the image public: on your GitHub profile go to Packages → this package → Package settings → Change visibility. The cluster API server must be reachable from the internet for GitHub-hosted runners. If the smoke test fails on a real cluster, the job rolls back to the previous version automatically.
+
+## Deploy to AWS EC2
+
+The live app runs on an Ubuntu EC2 instance with Docker Compose (`docker-compose.prod.yml`): the API on port 80 and Postgres with no public port.
+
+1. Launch an Ubuntu 24.04 instance (t2.micro or t3.micro, free tier).
+2. Security group: allow HTTP (80) from anywhere and SSH (22).
+3. Paste `scripts/ec2-user-data.sh` into Advanced details, User data.
+4. Wait about 5 minutes, then open `http://<public IP>`.
+
+The startup script installs Docker, clones this repo, creates a random database password in `.env` on the server and starts the app.
+
+**Automatic updates (optional):** add two repository secrets, `EC2_HOST` (the public IP) and `EC2_SSH_KEY` (the contents of the `.pem` key). After that, every merge to main deploys to staging, then production, then updates EC2 and checks `/health`.
 
 ## Run the 5 test scenarios
 
