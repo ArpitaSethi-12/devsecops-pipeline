@@ -4,8 +4,8 @@
 
 | What | Link |
 |---|---|
-| Live app on AWS EC2 | http://EC2_PUBLIC_IP |
-| Health check | http://EC2_PUBLIC_IP/health |
+| Live app on AWS EC2 | http://51.20.9.86 |
+| Health check | http://51.20.9.86/health |
 | Project dashboard | https://arpitasethi-12.github.io/devsecops-pipeline |
 | Source code | https://github.com/ArpitaSethi-12/devsecops-pipeline |
 
